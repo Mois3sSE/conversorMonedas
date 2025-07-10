@@ -1,8 +1,10 @@
 import java.net.URI;
 import java.net.http.*;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 
 public class App {
@@ -25,11 +27,13 @@ public class App {
 
     public static void main(String[] args) throws Exception {
         Scanner scan = new Scanner (System.in); 
-        int seleccion;
-        float saldo; 
+        int seleccion,rep = 1;
+        float saldo = 0; 
         Divisas divisas = new Divisas();
-        String divisaTemp;  
+        String divisaTemp; 
+        boolean entradaValida = false ;  
 
+        do{
         do {
         mensajeBienvenida();
         seleccion = scan.nextInt();
@@ -47,12 +51,21 @@ public class App {
         divisaTemp = scan.nextLine().toUpperCase(); 
         divisas.setDivisa2(divisaTemp); 
         
-        System.out.println("¿Cuantos " + divisas.getDivisa1() + " quieres cambiar a " 
-        + divisas.getDivisa2() +" ? ");
-        saldo = scan.nextFloat(); 
+        while(!entradaValida){
+            System.out.println("¿Cuantos " + divisas.getDivisa1() + " quieres cambiar a " 
+            + divisas.getDivisa2() +" ? ");
+            try{
+                saldo = scan.nextFloat(); 
+                entradaValida = true; 
+            } catch (InputMismatchException e ){
+                System.out.println("El dato ingresado para el saldo no es correcto\n" +
+                "Coloca un saldo correcto");
+                scan.nextLine(); 
+            } 
+        }   
         
-        String direccion = "https://v6.exchangerate-api.com/v6/400da96517ef351effc4900a/pair/" +  divisas.getDivisa1()  + "/" 
-        + divisas.getDivisa2() + "/" + saldo  ; 
+        String direccion = "https://v6.exchangerate-api.com/v6/400da96517ef351effc4900a/pair/" + 
+        divisas.getDivisa1()  + "/" + divisas.getDivisa2() + "/" + saldo  ; 
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -60,11 +73,16 @@ public class App {
         .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         String json = response.body(); 
-        System.out.println(json);
+        // System.out.println(json);
          
-        Gson gson = new Gson(); 
-        Conversor conversion = gson.fromJson(json,Conversor.class); 
-
+        Gson gson = new GsonBuilder().setPrettyPrinting().create(); 
+        ConversorRecord conversion = gson.fromJson(json,ConversorRecord.class); 
+        // System.out.println(conversion);
+        Conversor divisaConvertida = new Conversor(conversion,saldo); 
+        System.out.println(divisaConvertida.toString()); 
+        System.out.println("¿Quieres realizar otra conversion 1.- SI/0.- NO");
+        rep = scan.nextInt(); 
+        } while (rep == 1); 
         scan.close();
 
     }
