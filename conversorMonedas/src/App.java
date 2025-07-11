@@ -1,8 +1,9 @@
+import java.io.*; 
 import java.net.URI;
 import java.net.http.*;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.util.InputMismatchException;
-import java.util.Scanner;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -22,21 +23,31 @@ public class App {
         + "1 USD = 18.69 MXN " );
          System.out.println("Por el momento solo se puede hacer uso de Dolar (USD), Peso argentino (ARS),\n" +
         "Real brasileño (BRL),Peso colombiano(COP) y Peso mexicano (MXN)");
-
     }
 
     public static void main(String[] args) throws Exception {
         Scanner scan = new Scanner (System.in); 
-        int seleccion,rep = 1;
+        int seleccion = 1,rep = 1;
         float saldo = 0; 
         Divisas divisas = new Divisas();
         String divisaTemp; 
-        boolean entradaValida = false ;  
+        boolean entradaValida = false ;
+        List<Conversor> conversionesJson = new ArrayList<>();  
 
         do{
         do {
         mensajeBienvenida();
-        seleccion = scan.nextInt();
+        while(!entradaValida){
+            try{
+                seleccion = scan.nextInt();
+                entradaValida = true; 
+            } catch(InputMismatchException e){
+                System.out.println("El tipo de dato ingresado no es valido.");
+                scan.nextLine();
+                mensajeBienvenida(); 
+            }
+        }
+        entradaValida = false; 
         if ( seleccion == 1 ){
             manualDeUso();
         } 
@@ -63,7 +74,7 @@ public class App {
                 scan.nextLine(); 
             } 
         }   
-        
+        entradaValida = false; 
         String direccion = "https://v6.exchangerate-api.com/v6/400da96517ef351effc4900a/pair/" + 
         divisas.getDivisa1()  + "/" + divisas.getDivisa2() + "/" + saldo  ; 
 
@@ -73,17 +84,28 @@ public class App {
         .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         String json = response.body(); 
-        // System.out.println(json);
+        LocalDateTime ahora = LocalDateTime.now(); 
+        DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"); 
+        String fechaConseguida = ahora.format(formatoFecha);
          
         Gson gson = new GsonBuilder().setPrettyPrinting().create(); 
         ConversorRecord conversion = gson.fromJson(json,ConversorRecord.class); 
-        // System.out.println(conversion);
-        Conversor divisaConvertida = new Conversor(conversion,saldo); 
-        System.out.println(divisaConvertida.toString()); 
-        System.out.println("¿Quieres realizar otra conversion 1.- SI/0.- NO");
+        Conversor divisaConvertida = new Conversor(conversion,saldo,fechaConseguida); 
+        System.out.println(divisaConvertida);
+        conversionesJson.add(divisaConvertida); 
+
+       try(FileWriter escritor = new FileWriter("Conversiones.json")){                 
+            escritor.write(gson.toJson(conversionesJson));
+            escritor.close();    
+        }catch (IOException e) {
+            System.out.println("Error al generar el archivo Conversiones.json");
+        }
+       
+        System.out.println("\n¿Quieres realizar otra conversion 1.- SI/0.- NO");
         rep = scan.nextInt(); 
         } while (rep == 1); 
         scan.close();
+        System.exit(0);
 
     }
 }

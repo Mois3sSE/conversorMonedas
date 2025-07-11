@@ -1,17 +1,18 @@
 public class Conversor {
-    String divisaBase,divisaConversion,tasaDeConversion; 
-    float conversion,saldo; 
+    String divisaBase,divisaConversion,tasaDeConversion,fechaActual; 
+    float conversion,saldoConvertido; 
 
-    public Conversor(ConversorRecord conversorRecord,float saldo){
+    public Conversor(ConversorRecord conversorRecord,float saldo,String fecha){
         this.divisaBase = conversorRecord.base_code(); 
         this.divisaConversion = conversorRecord.target_code(); 
         this.tasaDeConversion = conversorRecord.conversion_rate(); 
         this.conversion = Float.parseFloat(conversorRecord.conversion_result());
-        this.saldo = saldo;  
+        this.saldoConvertido = saldo;
+        this.fechaActual = fecha;   
     } 
     @Override
     public String toString() {
-        return saldo + " " + divisaBase + " = " + conversion + " " + divisaConversion +
-        "\nA una tasa de cambio de " + tasaDeConversion;
+        return fechaActual +"\n"+ saldoConvertido + " " + divisaBase + " = " + conversion + " " + divisaConversion +
+        "\nA una tasa de cambio de " + tasaDeConversion ;
     }
 }
